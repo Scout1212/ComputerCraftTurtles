@@ -1,0 +1,80 @@
+function selectItem(a)
+	for i = 1, 16 do
+		local data = turtle.getItemDetail(i)
+		if data and string.match(data.name, a) then
+			turtle.select(i)
+			return true
+		end
+	end
+	return false
+end
+
+function fuel()
+	if turtle.getFuelLevel() <  20 then
+		selectItem("minecraft:coal")
+		turtle.refuel()
+	end
+end
+
+function returnHome(r, c)
+	turtle.turnLeft()
+	for i = 1, r do
+		turtle.forward()
+	end
+
+	turtle.turnRight()
+
+	for i = 1, c do
+		turtle.forward()
+	end
+
+	for i = 1, 2 do
+		turtle.turnRight()
+	end
+end
+
+function depoWheat()
+	for i = 1, 16 do
+		local data = turtle.getItemDetail(i)
+		if data and string.match(data.name, "minecraft:wheat") then
+			turtle.select(i)
+			turtle.dropUp()
+		end
+	end
+end
+
+function breakWheat()
+	turtle.digDown()
+	selectItem("minecraft:wheat_seeds")
+	turtle.placeDown()
+end
+
+local columnSize = 17
+columnSize = columnSize - 1
+local rows = 17
+rows = rows - 1
+if rows % 2 == 0 then
+	rows = rows + 1
+end
+
+for i = 1, rows do
+	for col = 1, columnSize do
+		breakWheat()
+		turtle.forward()
+		fuel()
+	end
+	if i % 2 == 0 then
+		breakWheat()
+		turtle.turnRight()
+		turtle.forward()
+		turtle.turnRight()
+	else
+		breakWheat()
+		turtle.turnLeft()
+		turtle.forward()
+		turtle.turnLeft()
+	end
+end
+
+returnHome(rows, columnSize)
+depoWheat()

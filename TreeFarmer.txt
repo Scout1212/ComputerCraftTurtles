@@ -1,0 +1,171 @@
+function selectItem(a)
+	for i = 1, 16 do
+		local data = turtle.getItemDetail(i)
+		if data and string.match(data.name, a) then
+			turtle.select(i)
+			print("Found item")
+			return true
+		end
+	end
+	return false
+end
+
+function addUpItem(a)
+	local amount = 0;
+	for i = 1, 16 do
+		local data = turtle.getItemDetail(i)
+		if data and string.match(data.name, a) then
+			turtle.select(i)
+			amount = amount + turtle.getItemCount()
+		end
+	end
+	return amount
+end
+
+function depoSpruce()
+	for i = 1, 16 do
+		local data = turtle.getItemDetail(i)
+		if data and string.match(data.name, "minecraft:spruce_log") then
+			turtle.select(i)
+			turtle.dropDown()
+		end
+	end
+end
+
+function setJob()
+	print("How many trees?")
+	local treeCount = tonumber(read())
+
+	local boneMealReq = treeCount * 15
+	local sapReq = treeCount * 4
+
+	local sapStored = addUpItem("minecraft:spruce_sapling")
+	local boneMealStored = addUpItem("minecraft:bone_meal")
+
+	if sapStored >= sapReq and boneMealStored >= boneMealReq then
+		return treeCount
+	else
+		local BoneMealMiss = boneMealReq - boneMealStored
+		local sapMiss = sapReq - sapStored
+		print("Error: not enough Materials:")
+
+		if BoneMealMiss >= 0 then
+			print("Bone Meal missing:" .. BoneMealMiss )
+		end
+
+		if sapMiss >= 0 then
+		print("Saplings missing:" .. sapMiss)
+		end
+		return false
+	end
+end
+
+
+function bonemeal()
+	local treeType = "minecraft:spruce_log"
+	local success, blockData = turtle.inspect()
+	while not string.match(blockData.name, treeType) do
+		local hasBoneMeal = selectItem("minecraft:bone_meal")
+		if hasBoneMeal then
+			turtle.place()
+		else
+			print("Error: not enough bone meal")
+			return false
+		end
+		success, blockData = turtle.inspect()
+	end	
+	return true
+end
+
+function digForward()
+	if turtle.getFuelLevel() == 0 then
+		selectItem("minecraft:coal")
+		local isfuel = turtle.refuel()
+		if not isfuel then
+			print("Error: No fuel")
+			return false
+		end
+	end
+	turtle.dig()
+	turtle.forward()
+	return true
+end
+
+function digSquare()
+	for i = 1, 4 do
+		local dug = digForward()
+		if not dug then
+			return false
+		end
+		turtle.turnRight()
+	end
+	return true
+end
+
+function digTree()
+	local movedUp = 0;
+	local success, blockData = turtle.inspect()
+	local dug = digForward()
+	while success and dug do 
+		dug = digSquare()
+		success, blockData = turtle.inspectUp()
+		if success and dug then
+			turtle.digUp()
+			turtle.up()
+			movedUp = movedUp + 1
+		end
+	end
+	return movedUp
+end
+
+function returnHome(a)
+	for i = 1, a - 1 do
+		turtle.down()
+	end
+		plantTree()
+		turnAround()
+		digForward()
+
+		turtle.down()
+
+		turnAround()
+		depoSpruce()
+	return true
+end
+
+function turnAround()
+	turtle.turnRight()
+	turtle.turnRight()
+end
+function plantTree()
+	for i = 1, 4 do
+		if turtle.getFuelLevel() == 0 then
+			selectItem("minecraft:coal")
+			local isfuel = turtle.refuel()
+			if not isfuel then
+				print("Error: No fuel")
+				return false
+			end
+		end
+		selectItem("minecraft:spruce_sapling")
+		turtle.placeDown()
+		turtle.forward()
+		turtle.turnRight()
+	end
+	return true
+end
+
+local canDoJob = setJob()
+
+if type(canDoJob) == "number" then
+	for i = 1, canDoJob do
+		local isBoneMeal = bonemeal()
+		if isBoneMeal then
+			local movedUp = digTree()
+			returnHome(movedUp)
+		else
+			print("Error: Bone Mealing failed, exiting.")
+		end
+	end
+end
+print("finished")
